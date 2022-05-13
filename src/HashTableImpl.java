@@ -1,6 +1,9 @@
-public class HashTableImpl <K, V> implements HashTable<K, V>{
-    private final Item<K, V>[] data;
-    private final Item<K, V> emptyItem;
+import java.util.LinkedList;
+import java.util.List;
+
+public class HashTableImpl<K, V> implements HashTable<K, V> {
+    private final List<Item<K, V>>[] data;
+
     private int size;
 
     static class Item<K, V> implements Entry<K, V> {
@@ -34,8 +37,10 @@ public class HashTableImpl <K, V> implements HashTable<K, V>{
     }
 
     public HashTableImpl(int initialCapacity) {
-        this.data = new Item[initialCapacity * 2];
-        emptyItem = new Item<>(null, null);
+        this.data = new LinkedList[initialCapacity * 2];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = new LinkedList<>();
+        }
     }
 
     public HashTableImpl() {
@@ -49,22 +54,20 @@ public class HashTableImpl <K, V> implements HashTable<K, V>{
         }
 
         int indexFromHashFunc = hashFunc(key);
-        int n = 0;
 
-        while (data[indexFromHashFunc] != null && data[indexFromHashFunc] != emptyItem) {
-            if (isKeysEquals(data[indexFromHashFunc], key)) {
-                data[indexFromHashFunc].setValue(value);
-                return true;
+        while (true) {
+            if (data[indexFromHashFunc].size() == 0) {
+                data[indexFromHashFunc].add(new Item<>(key, value));
+                size++;
+                break;
+            } else if (data[indexFromHashFunc].get(0).getKey().equals(key)) {
+                data[indexFromHashFunc].add(new Item<>(key, value));
+                break;
             }
-//            indexFromHashFunc += getStepLinear();
-//            indexFromHashFunc += getStepQuadratic(n++);
-            indexFromHashFunc += getDoubleHash(key);
 
+            indexFromHashFunc += getDoubleHash(key);
             indexFromHashFunc %= data.length;
         }
-
-        data[indexFromHashFunc] = new Item<>(key, value);
-        size++;
 
         return true;
     }
@@ -74,29 +77,25 @@ public class HashTableImpl <K, V> implements HashTable<K, V>{
         return n - (key.hashCode() % n);
     }
 
-    private int getStepQuadratic(int i) {
-        return (int) Math.pow(i, 2);
-    }
-
-    private int getStepLinear() {
-        return 1;
-    }
-
-    private boolean isKeysEquals(Item<K, V> item, K key) {
-        if (item == emptyItem) {
-            return false;
-        }
-        return (item.getKey() == null) ? (key == null) : (item.getKey().equals(key));
-    }
-
     private int hashFunc(K key) {
         return Math.abs(key.hashCode() % data.length);
     }
 
     @Override
-    public V get(K key) {
+    public V[] get(K key) {
         int index = indexOf(key);
-        return index == -1 ? null : data[index].getValue();
+
+        if (index == -1) {
+            return null;
+        }
+
+        V[] arr = (V[]) new Object[data[index].size()];
+
+        for (int i = 0; i < data[index].size(); i++) {
+            arr[i] = data[index].get(i).getValue();
+        }
+
+        return arr;
     }
 
     private int indexOf(K key) {
@@ -104,10 +103,10 @@ public class HashTableImpl <K, V> implements HashTable<K, V>{
 
         int count = 0;
         while (count++ < data.length) {
-            if (data[indexFromHashFunc] == null) {
+            if (data[indexFromHashFunc].size() == 0) {
                 break;
             }
-            if (isKeysEquals(data[indexFromHashFunc], key)) {
+            if (data[indexFromHashFunc].get(0).getKey().equals(key)) {
                 return indexFromHashFunc;
             }
             indexFromHashFunc += getDoubleHash(key);
@@ -118,16 +117,23 @@ public class HashTableImpl <K, V> implements HashTable<K, V>{
     }
 
     @Override
-    public V remove(K key) {
+    public V[] remove(K key) {
         int index = indexOf(key);
         if (index == -1) {
             return null;
         }
 
-        Item<K, V> removed = data[index];
-        data[index] = emptyItem;
+        LinkedList<Item<K, V>> removed = (LinkedList<Item<K, V>>) data[index];
 
-        return removed.getValue();
+        data[index] = new LinkedList<>();
+
+        V[] arr = (V[]) new Object[data[index].size()];
+
+        for (int i = 0; i < data[index].size(); i++) {
+            arr[i] = removed.get(i).getValue();
+        }
+
+        return arr;
     }
 
     @Override

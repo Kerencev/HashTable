@@ -1,10 +1,12 @@
+import java.util.List;
+
 public interface HashTable<K, V> {
 
     boolean put(K key, V value);
 
-    V get(K key);
+    V[] get(K key);
 
-    V remove(K key);
+    V[] remove(K key);
 
     int size();
 
